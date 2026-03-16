@@ -1,0 +1,149 @@
+@import "tailwindcss";
+
+/* ====== Premura Design System ====== */
+
+:root {
+  --bg-base: #1a1a2e;
+  --bg-surface: #16213e;
+  --bg-elevated: #0f3460;
+  --cyan: #00d4ff;
+  --purple: #7b2ff7;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --border-subtle: rgba(0, 212, 255, 0.15);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* ====== Utility Classes ====== */
+
+.text-primary { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-cyan { color: var(--cyan); }
+.text-purple { color: var(--purple); }
+.bg-surface { background-color: var(--bg-surface); }
+.bg-elevated { background-color: var(--bg-elevated); }
+
+/* ====== Component Styles ====== */
+
+.dashboard-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(123, 47, 247, 0.15);
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.dashboard-card:hover {
+  box-shadow: 0 4px 24px rgba(123, 47, 247, 0.2);
+}
+
+.pill-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 500;
+  background: linear-gradient(135deg, rgba(123, 47, 247, 0.15), rgba(0, 212, 255, 0.1));
+  color: var(--cyan);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  white-space: nowrap;
+}
+
+.input-field {
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 6px 12px;
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.input-field:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.15);
+}
+
+.input-field::placeholder {
+  color: var(--text-secondary);
+}
+
+/* Tabular numerals for consistent data alignment */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ====== Animations ====== */
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.animate-slideIn {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* ====== Gradient helpers ====== */
+
+.bg-gradient-to-r {
+  background-image: linear-gradient(to right, var(--tw-gradient-stops));
+}
+
+.from-purple {
+  --tw-gradient-from: #7b2ff7;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgba(123, 47, 247, 0));
+}
+
+.to-cyan {
+  --tw-gradient-to: #00d4ff;
+}
+
+/* ====== Scrollbar ====== */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Date input styling for dark theme */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.7);
+}
