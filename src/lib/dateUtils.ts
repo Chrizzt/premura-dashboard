@@ -9,50 +9,58 @@ import {
   isAfter,
   isBefore,
   isEqual,
+  eachDayOfInterval,
+  isWeekend,
+  min,
 } from 'date-fns';
 
 /**
  * Working week runs Friday (day 5) to Thursday (day 4).
- * Given a date, returns the Friday that starts its working week.
  */
 export function getWorkingWeekStart(date: Date): Date {
   const d = startOfDay(date);
-  const day = d.getDay(); // 0=Sun,1=Mon,...,5=Fri,6=Sat
-  // How many days since the most recent Friday?
-  const daysSinceFriday = (day + 2) % 7; // Fri=0, Sat=1, Sun=2, Mon=3, Tue=4, Wed=5, Thu=6
+  const day = d.getDay();
+  const daysSinceFriday = (day + 2) % 7;
   return addDays(d, -daysSinceFriday);
 }
 
-/**
- * Returns the Thursday that ends the working week containing `date`.
- */
 export function getWorkingWeekEnd(date: Date): Date {
-  const weekStart = getWorkingWeekStart(date);
-  return addDays(weekStart, 6);
+  return addDays(getWorkingWeekStart(date), 6);
 }
 
 /**
- * Count how many complete working weeks (Fri–Thu) have elapsed
- * since cycleStartDate up to today. Partial current week counts as 1.
+ * Count elapsed working weeks (Fri–Thu) from cycle start to today.
  */
 export function getElapsedWorkingWeeks(cycleStartDate: Date): number {
   const today = startOfDay(new Date());
   const start = startOfDay(cycleStartDate);
-
   if (isAfter(start, today)) return 0;
-
   const totalDays = differenceInCalendarDays(today, start) + 1;
-  const weeks = Math.ceil(totalDays / 7);
-  return Math.max(weeks, 1);
+  return Math.max(Math.ceil(totalDays / 7), 1);
 }
 
 /**
- * Generate an array of working week ranges between two dates.
+ * Count business days (Mon-Fri) between two dates, inclusive.
+ * Caps the end date to today so we never count future business days.
+ */
+export function getBusinessDaysBetween(startDate: Date | string, endDate: Date | string): number {
+  const start = startOfDay(typeof startDate === 'string' ? new Date(startDate) : startDate);
+  const today = startOfDay(new Date());
+  const rawEnd = startOfDay(typeof endDate === 'string' ? new Date(endDate) : endDate);
+  const end = min([rawEnd, today]);
+
+  if (isAfter(start, end)) return 0;
+
+  const days = eachDayOfInterval({ start, end });
+  return days.filter((d) => !isWeekend(d)).length;
+}
+
+/**
+ * Generate working week ranges between two dates.
  */
 export function getWorkingWeeks(from: Date, to: Date): { start: Date; end: Date; label: string }[] {
   const weeks: { start: Date; end: Date; label: string }[] = [];
   let current = getWorkingWeekStart(from);
-
   while (isBefore(current, to) || isEqual(current, to)) {
     const end = addDays(current, 6);
     weeks.push({
@@ -62,7 +70,6 @@ export function getWorkingWeeks(from: Date, to: Date): { start: Date; end: Date;
     });
     current = addDays(current, 7);
   }
-
   return weeks;
 }
 
@@ -78,27 +85,22 @@ export function getMonthRanges(from: Date, to: Date): { start: Date; end: Date; 
   }));
 }
 
-/**
- * Cycle end date = cycle start + 30 days.
- */
 export function getCycleEndDate(cycleStartDate: Date): Date {
   return addDays(cycleStartDate, 30);
 }
 
-/**
- * Format a date for display.
- */
 export function formatDate(date: Date | string, fmt: string = 'MMM d, yyyy'): string {
   const d = typeof date === 'string' ? new Date(date) : date;
   return format(d, fmt);
 }
 
-/**
- * Check if a date falls within a range (inclusive).
- */
 export function isInRange(date: Date | string, start: Date, end: Date): boolean {
   const d = startOfDay(typeof date === 'string' ? new Date(date) : date);
   const s = startOfDay(start);
   const e = startOfDay(end);
   return (isAfter(d, s) || isEqual(d, s)) && (isBefore(d, e) || isEqual(d, e));
+}
+
+export function getTodayString(): string {
+  return format(new Date(), 'yyyy-MM-dd');
 }

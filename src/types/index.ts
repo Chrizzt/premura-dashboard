@@ -43,9 +43,6 @@ export interface ClientSeat {
 export interface ClientMetrics {
   companyId: string;
   companyName: string;
-  cycleStartDate: string;
-  cycleEndDate: string;
-  seatCount: number;
   activeAgents: number;
   totalAppointments: number;
   cycleAchievement: number;
@@ -57,10 +54,8 @@ export interface AgentMetrics {
   setterName: string;
   companyId: string;
   companyName: string;
-  cycleStartDate: string;
-  cycleEndDate: string;
   appointmentsBooked: number;
-  weeklyAvg: number;
+  dailyAvg: number;
   cycleAchievement: number;
   totalLeads: number;
 }

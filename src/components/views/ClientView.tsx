@@ -3,18 +3,19 @@ import { useClients } from '../../hooks/useClients';
 import FilterBar from '../layout/FilterBar';
 import ProgressBar from '../shared/ProgressBar';
 import ExpandableRow from '../shared/ExpandableRow';
-import { formatDate } from '../../lib/dateUtils';
 import { getAchievementTier } from '../../lib/calculations';
 import type { AchievementTier, AgentMetrics } from '../../types';
 
 interface ClientViewProps {
   selectedClients: string[];
+  dateStart: string;
+  dateEnd: string;
 }
 
-const gridCols = '2fr 1fr 1fr 0.8fr 0.8fr 1fr 1.5fr 0.8fr';
+const gridCols = '2fr 0.8fr 0.8fr 1fr 1.5fr 0.8fr';
 
-export default function ClientView({ selectedClients }: ClientViewProps) {
-  const { clients, loading } = useClients({ selectedClients });
+export default function ClientView({ selectedClients, dateStart, dateEnd }: ClientViewProps) {
+  const { clients, loading } = useClients({ selectedClients, dateStart, dateEnd });
   const [search, setSearch] = useState('');
   const [tierFilter, setTierFilter] = useState<AchievementTier>('all');
 
@@ -38,7 +39,6 @@ export default function ClientView({ selectedClients }: ClientViewProps) {
         onAchievementFilterChange={setTierFilter}
       />
 
-      {/* Table header */}
       <div className="dashboard-card overflow-hidden">
         <div
           className="grid items-center gap-4 px-4 py-3 text-xs font-semibold text-secondary uppercase tracking-wider"
@@ -49,38 +49,37 @@ export default function ClientView({ selectedClients }: ClientViewProps) {
           }}
         >
           <span className="pl-6">Client Name</span>
-          <span>Cycle Start</span>
-          <span>Cycle End</span>
-          <span>Seats</span>
-          <span>Active Agents</span>
+          <span>Agents</span>
           <span>Appointments</span>
+          <span>Total Leads</span>
           <span>Achievement</span>
-          <span>Leads</span>
+          <span>Daily Avg</span>
         </div>
 
-        {/* Rows */}
         {filtered.length === 0 ? (
           <div className="px-4 py-8 text-center text-secondary">No clients match your filters.</div>
         ) : (
-          filtered.map((client) => (
-            <ExpandableRow
-              key={client.companyId}
-              gridCols={gridCols}
-              cells={[
-                <span className="pill-badge">{client.companyName}</span>,
-                <span className="text-sm text-primary tabular-nums">{formatDate(client.cycleStartDate)}</span>,
-                <span className="text-sm text-primary tabular-nums">{formatDate(client.cycleEndDate)}</span>,
-                <span className="text-sm text-primary font-semibold tabular-nums">{client.seatCount}</span>,
-                <span className="text-sm text-primary tabular-nums">{client.activeAgents}</span>,
-                <span className="text-sm text-primary font-semibold tabular-nums">{client.totalAppointments}</span>,
-                <ProgressBar percentage={client.cycleAchievement} />,
-                <span className="text-sm text-primary tabular-nums">{client.totalLeads}</span>,
-              ]}
-              expandedContent={
-                <AgentSubTable agents={client.agents} />
-              }
-            />
-          ))
+          filtered.map((client) => {
+            const dailyAvg = client.agents.length > 0
+              ? (client.agents.reduce((sum, a) => sum + a.dailyAvg, 0) / client.agents.length)
+              : 0;
+
+            return (
+              <ExpandableRow
+                key={client.companyId}
+                gridCols={gridCols}
+                cells={[
+                  <span className="pill-badge">{client.companyName}</span>,
+                  <span className="text-sm text-primary tabular-nums">{client.activeAgents}</span>,
+                  <span className="text-sm text-primary font-semibold tabular-nums">{client.totalAppointments}</span>,
+                  <span className="text-sm text-primary tabular-nums">{client.totalLeads}</span>,
+                  <ProgressBar percentage={client.cycleAchievement} />,
+                  <span className="text-sm text-primary tabular-nums">{dailyAvg.toFixed(2)}/day</span>,
+                ]}
+                expandedContent={<AgentSubTable agents={client.agents} />}
+              />
+            );
+          })
         )}
       </div>
     </div>
@@ -94,7 +93,6 @@ function AgentSubTable({ agents }: { agents: AgentMetrics[] }) {
 
   return (
     <div className="rounded-lg overflow-hidden" style={{ backgroundColor: 'rgba(0,0,0,0.12)' }}>
-      {/* Sub-header */}
       <div
         className="grid items-center gap-4 px-4 py-2 text-xs font-semibold text-secondary uppercase tracking-wider"
         style={{
@@ -104,7 +102,7 @@ function AgentSubTable({ agents }: { agents: AgentMetrics[] }) {
       >
         <span>Agent Name</span>
         <span>Appointments</span>
-        <span>Weekly Avg</span>
+        <span>Daily Avg</span>
         <span>Achievement</span>
         <span>Leads</span>
       </div>
@@ -117,7 +115,7 @@ function AgentSubTable({ agents }: { agents: AgentMetrics[] }) {
         >
           <span className="text-primary font-medium">{agent.setterName}</span>
           <span className="text-primary tabular-nums">{agent.appointmentsBooked}</span>
-          <span className="text-primary tabular-nums">{agent.weeklyAvg.toFixed(1)}</span>
+          <span className="text-primary tabular-nums">{agent.dailyAvg.toFixed(2)}/day</span>
           <ProgressBar percentage={agent.cycleAchievement} height={6} />
           <span className="text-primary tabular-nums">{agent.totalLeads}</span>
         </div>

@@ -16,47 +16,47 @@ export function hasValidSetter(record: Appointment): boolean {
   if (!record.setter_name) return false;
   const trimmed = record.setter_name.trim();
   if (trimmed === '') return false;
-  // Filter out garbage data: pure numbers, single characters
   if (/^\d+$/.test(trimmed)) return false;
   if (trimmed.length <= 2) return false;
   return true;
 }
 
 /**
- * Cycle achievement for a CLIENT.
- * target = seats × 5 × elapsed working weeks
+ * Achievement for a CLIENT.
+ * Target = number_of_agents × business_days_elapsed (1 appt per agent per business day)
+ * Achievement = (appointments / target) × 100
  */
-export function clientCycleAchievement(
+export function clientAchievement(
   appointments: number,
-  seats: number,
-  elapsedWeeks: number
+  agentCount: number,
+  businessDays: number
 ): number {
-  const target = seats * 5 * elapsedWeeks;
+  const target = agentCount * businessDays;
   if (target === 0) return 0;
   return (appointments / target) * 100;
 }
 
 /**
- * Cycle achievement for an AGENT (1 seat per agent).
- * target = 1 × 5 × elapsed working weeks
+ * Achievement for an AGENT.
+ * Target = business_days_elapsed (1 appt per business day)
+ * Achievement = (appointments / target) × 100
  */
-export function agentCycleAchievement(
+export function agentAchievement(
   appointments: number,
-  elapsedWeeks: number
+  businessDays: number
 ): number {
-  const target = 5 * elapsedWeeks;
-  if (target === 0) return 0;
-  return (appointments / target) * 100;
+  if (businessDays === 0) return 0;
+  return (appointments / businessDays) * 100;
 }
 
 /**
  * Return the color for an achievement percentage tier.
  */
 export function getAchievementColor(percentage: number): string {
-  if (percentage > 100) return '#00d4ff'; // cyan — above target
-  if (percentage >= 85) return '#22c55e';  // green
-  if (percentage >= 60) return '#eab308';  // yellow
-  return '#ef4444';                         // red
+  if (percentage > 100) return '#00d4ff';
+  if (percentage >= 85) return '#22c55e';
+  if (percentage >= 60) return '#eab308';
+  return '#ef4444';
 }
 
 /**
@@ -70,9 +70,9 @@ export function getAchievementTier(percentage: number): 'blue' | 'green' | 'yell
 }
 
 /**
- * Calculate weekly average: appointments / elapsed weeks.
+ * Daily average: appointments / business days.
  */
-export function weeklyAverage(appointments: number, elapsedWeeks: number): number {
-  if (elapsedWeeks === 0) return 0;
-  return appointments / elapsedWeeks;
+export function dailyAverage(appointments: number, businessDays: number): number {
+  if (businessDays === 0) return 0;
+  return appointments / businessDays;
 }

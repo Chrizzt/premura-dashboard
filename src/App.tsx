@@ -77,10 +77,10 @@ export default function App() {
 
         <main className="flex-1 p-6" key={refreshKey}>
           <Routes>
-            <Route path="/" element={<Overview selectedClients={selectedClients} />} />
-            <Route path="/clients" element={<ClientView selectedClients={selectedClients} />} />
-            <Route path="/agents" element={<AgentView selectedClients={selectedClients} />} />
-            <Route path="/leaderboard" element={<LeaderboardView selectedClients={selectedClients} />} />
+            <Route path="/" element={<Overview selectedClients={selectedClients} dateStart={dateRange.start} dateEnd={dateRange.end} />} />
+            <Route path="/clients" element={<ClientView selectedClients={selectedClients} dateStart={dateRange.start} dateEnd={dateRange.end} />} />
+            <Route path="/agents" element={<AgentView selectedClients={selectedClients} dateStart={dateRange.start} dateEnd={dateRange.end} />} />
+            <Route path="/leaderboard" element={<LeaderboardView selectedClients={selectedClients} dateStart={dateRange.start} dateEnd={dateRange.end} />} />
             <Route
               path="/historical"
               element={

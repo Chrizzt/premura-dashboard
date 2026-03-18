@@ -7,11 +7,13 @@ import type { TimeFilter } from '../../types';
 
 interface LeaderboardViewProps {
   selectedClients: string[];
+  dateStart: string;
+  dateEnd: string;
 }
 
-export default function LeaderboardView({ selectedClients }: LeaderboardViewProps) {
-  const { clients } = useClients({ selectedClients });
-  const { allAgents } = useAgents({ selectedClients });
+export default function LeaderboardView({ selectedClients, dateStart, dateEnd }: LeaderboardViewProps) {
+  const { clients } = useClients({ selectedClients, dateStart, dateEnd });
+  const { allAgents } = useAgents({ selectedClients, dateStart, dateEnd });
   const [tab, setTab] = useState<'clients' | 'agents'>('clients');
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('cycle');
 
@@ -26,15 +28,12 @@ export default function LeaderboardView({ selectedClients }: LeaderboardViewProp
 
   return (
     <div>
-      {/* Tabs + time filter */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex gap-1 p-1 rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.04)' }}>
           <button
             onClick={() => setTab('clients')}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-              tab === 'clients'
-                ? 'text-white bg-gradient-to-r from-purple to-cyan'
-                : 'text-secondary hover:text-primary'
+              tab === 'clients' ? 'text-white bg-gradient-to-r from-purple to-cyan' : 'text-secondary hover:text-primary'
             }`}
           >
             Top Clients
@@ -42,15 +41,12 @@ export default function LeaderboardView({ selectedClients }: LeaderboardViewProp
           <button
             onClick={() => setTab('agents')}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-              tab === 'agents'
-                ? 'text-white bg-gradient-to-r from-purple to-cyan'
-                : 'text-secondary hover:text-primary'
+              tab === 'agents' ? 'text-white bg-gradient-to-r from-purple to-cyan' : 'text-secondary hover:text-primary'
             }`}
           >
             Top Agents
           </button>
         </div>
-
         <div className="flex gap-1">
           {timeOptions.map((opt) => (
             <button
@@ -68,7 +64,6 @@ export default function LeaderboardView({ selectedClients }: LeaderboardViewProp
         </div>
       </div>
 
-      {/* Leaderboard cards */}
       <div className="flex flex-col gap-3">
         {tab === 'clients' ? (
           topClients.length === 0 ? (

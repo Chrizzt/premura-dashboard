@@ -1,27 +1,21 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, fetchAllRows } from '../lib/supabase';
-import { isValidAppointment, hasValidSetter, agentCycleAchievement, weeklyAverage } from '../lib/calculations';
-import { getElapsedWorkingWeeks } from '../lib/dateUtils';
+import { isValidAppointment, hasValidSetter, agentAchievement, dailyAverage } from '../lib/calculations';
+import { getBusinessDaysBetween } from '../lib/dateUtils';
 import type { Appointment, AgentMetrics } from '../types';
-import { addDays, format } from 'date-fns';
 
 interface Company {
   company_id: string;
   company_name: string;
 }
 
-interface GroupedAgents {
-  companyId: string;
-  companyName: string;
-  agents: AgentMetrics[];
-}
-
 interface UseAgentsOptions {
+  dateStart?: string;
+  dateEnd?: string;
   selectedClients?: string[];
 }
 
 export function useAgents(options: UseAgentsOptions = {}) {
-  const [grouped, setGrouped] = useState<GroupedAgents[]>([]);
   const [allAgents, setAllAgents] = useState<AgentMetrics[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -33,67 +27,66 @@ export function useAgents(options: UseAgentsOptions = {}) {
 
     const appointments = await fetchAllRows<Appointment>('appointments');
 
-    const groups: GroupedAgents[] = [];
-    const flatAgents: AgentMetrics[] = [];
+    const filterStart = options.dateStart || '2000-01-01';
+    const filterEnd = options.dateEnd || new Date().toISOString().split('T')[0];
+    const businessDays = getBusinessDaysBetween(filterStart, filterEnd);
 
-    for (const company of companies as Company[]) {
-      if (options.selectedClients?.length && !options.selectedClients.includes(company.company_id)) continue;
+    const companyMap = new Map<string, string>();
+    (companies as Company[]).forEach((c) => companyMap.set(c.company_id, c.company_name));
 
-      const companyAppts = appointments.filter((a) => a.company_id === company.company_id);
-      if (companyAppts.length === 0) continue;
+    // Filter appointments by date range
+    const rangeAppts = appointments.filter((a) => {
+      const createdDate = a.created_at.split('T')[0];
+      return createdDate >= filterStart && createdDate <= filterEnd;
+    });
 
-      // Determine cycle start from earliest record
-      const cycleStartDate = companyAppts.reduce((earliest, a) => {
-        return a.created_at < earliest ? a.created_at : earliest;
-      }, companyAppts[0].created_at).split('T')[0];
+    // Optionally filter by selected clients
+    const filteredAppts = options.selectedClients?.length
+      ? rangeAppts.filter((a) => options.selectedClients!.includes(a.company_id))
+      : rangeAppts;
 
-      const cycleStart = new Date(cycleStartDate);
-      const cycleEnd = addDays(cycleStart, 30);
-      const elapsedWeeks = getElapsedWorkingWeeks(cycleStart);
+    // Build a flat list of agents across all companies
+    const agentMap = new Map<string, { companyId: string; companyName: string; validAppts: number; totalLeads: number }>();
 
-      const validAppts = companyAppts.filter(isValidAppointment);
+    filteredAppts.forEach((a) => {
+      if (!hasValidSetter(a)) return;
+      const setterName = a.setter_name!.trim();
+      const key = `${setterName}___${a.company_id}`;
+      const existing = agentMap.get(key);
+      const isValid = isValidAppointment(a);
 
-      // Find all setters with valid names
-      const setterNames = new Set<string>();
-      companyAppts.forEach((a) => {
-        if (hasValidSetter(a)) {
-          setterNames.add(a.setter_name!.trim());
-        }
-      });
-
-      const agents: AgentMetrics[] = Array.from(setterNames).map((setterName) => {
-        const agentValid = validAppts.filter((a) => a.setter_name?.trim() === setterName);
-        const agentAll = companyAppts.filter((a) => a.setter_name?.trim() === setterName);
-
-        return {
-          setterName,
-          companyId: company.company_id,
-          companyName: company.company_name,
-          cycleStartDate,
-          cycleEndDate: format(cycleEnd, 'yyyy-MM-dd'),
-          appointmentsBooked: agentValid.length,
-          weeklyAvg: weeklyAverage(agentValid.length, elapsedWeeks),
-          cycleAchievement: agentCycleAchievement(agentValid.length, elapsedWeeks),
-          totalLeads: agentAll.length,
-        };
-      });
-
-      // Sort agents by appointments descending
-      agents.sort((a, b) => b.appointmentsBooked - a.appointmentsBooked);
-
-      if (agents.length > 0) {
-        groups.push({ companyId: company.company_id, companyName: company.company_name, agents });
-        flatAgents.push(...agents);
+      if (existing) {
+        if (isValid) existing.validAppts++;
+        existing.totalLeads++;
+      } else {
+        agentMap.set(key, {
+          companyId: a.company_id,
+          companyName: companyMap.get(a.company_id) || a.company_id,
+          validAppts: isValid ? 1 : 0,
+          totalLeads: 1,
+        });
       }
-    }
+    });
 
-    // Sort groups by total agent count descending
-    groups.sort((a, b) => b.agents.length - a.agents.length);
+    const flatAgents: AgentMetrics[] = [];
+    agentMap.forEach((data, key) => {
+      const setterName = key.split('___')[0];
+      flatAgents.push({
+        setterName,
+        companyId: data.companyId,
+        companyName: data.companyName,
+        appointmentsBooked: data.validAppts,
+        dailyAvg: dailyAverage(data.validAppts, businessDays),
+        cycleAchievement: agentAchievement(data.validAppts, businessDays),
+        totalLeads: data.totalLeads,
+      });
+    });
 
-    setGrouped(groups);
+    flatAgents.sort((a, b) => b.appointmentsBooked - a.appointmentsBooked);
+
     setAllAgents(flatAgents);
     setLoading(false);
-  }, [options.selectedClients]);
+  }, [options.dateStart, options.dateEnd, options.selectedClients]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -102,9 +95,8 @@ export function useAgents(options: UseAgentsOptions = {}) {
       .channel('agents-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'appointments' }, () => fetchData())
       .subscribe();
-
     return () => { supabase.removeChannel(channel); };
   }, [fetchData]);
 
-  return { grouped, allAgents, loading, refetch: fetchData };
+  return { allAgents, loading, refetch: fetchData };
 }

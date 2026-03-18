@@ -13,7 +13,7 @@ export function useLeaderboard(
         name: c.companyName,
         achievement: c.cycleAchievement,
         appointments: c.totalAppointments,
-        seats: c.seatCount,
+        seats: c.activeAgents,
       }))
       .sort((a, b) => b.achievement - a.achievement)
       .map((entry, i) => ({ ...entry, rank: i + 1 }));
@@ -27,7 +27,7 @@ export function useLeaderboard(
         companyName: a.companyName,
         achievement: a.cycleAchievement,
         appointments: a.appointmentsBooked,
-        weeklyAvg: a.weeklyAvg,
+        weeklyAvg: a.dailyAvg,
       }))
       .sort((a, b) => b.achievement - a.achievement)
       .map((entry, i) => ({ ...entry, rank: i + 1 }));
