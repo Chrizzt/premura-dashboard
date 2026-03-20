@@ -51,7 +51,6 @@ export function useClients(options: UseClientsOptions = {}) {
       if (companyAppts.length === 0 && !isSelected) return null;
 
       const validAppts = companyAppts.filter(isValidAppointment);
-      const setterAppts = validAppts.filter(hasValidSetter);
 
       // Find all unique setters with valid names in this date range
       const setterNames = new Set<string>();
